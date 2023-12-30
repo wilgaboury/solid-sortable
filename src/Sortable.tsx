@@ -474,7 +474,7 @@ interface SortableProps<T, U extends JSX.Element>
   readonly context?: SortableContext<T>; // cannot be changed dynamically
 
   readonly each: ReadonlyArray<T>;
-  readonly layout: Layouter | (() => Layouter);
+  readonly layout?: Layouter | (() => Layouter);
   readonly children: (props: SortableItemProps<T>) => U;
 
   readonly fallback?: JSX.Element;
@@ -500,12 +500,13 @@ export function Sortable<T, U extends JSX.Element>(props: SortableProps<T, U>) {
 
   createEffect(() => {
     const tmp = layouter();
-    tmp.mount?.(containerRef!);
-    onCleanup(() => tmp.unmount?.());
+    if (tmp != null) {
+      tmp.mount?.(containerRef!);
+      onCleanup(() => tmp.unmount?.());
+    }
   });
 
   const itemToElem = new Map<T, HTMLElement>();
-
   const [sizesDepend, sizesTrigger] = createSignal(undefined, {
     equals: false,
   });
@@ -527,7 +528,7 @@ export function Sortable<T, U extends JSX.Element>(props: SortableProps<T, U>) {
     },
   );
   const layout = createMemo(() => {
-    return layouter().layout(sizes());
+    return layouter()?.layout(sizes());
   });
 
   const dragHandler: DragHandler<T> =
@@ -536,7 +537,7 @@ export function Sortable<T, U extends JSX.Element>(props: SortableProps<T, U>) {
   onMount(() => {
     sortableRef = {
       ref: containerRef!,
-      checkIndex: (rect) => layout().checkIndex?.(rect),
+      checkIndex: (rect) => layout()?.checkIndex?.(rect),
       hooks: createSortableHooksDispatcher(props),
       len: () => props.each.length,
       insertFilter: () => props.insertFilter ?? (() => true),
@@ -551,7 +552,9 @@ export function Sortable<T, U extends JSX.Element>(props: SortableProps<T, U>) {
     });
   });
 
-  const resizeObserver = new ResizeObserver(sizesTrigger);
+  const resizeObserver = new ResizeObserver(() => {
+    sizesTrigger();
+  });
 
   return (
     <div class="sortable" ref={containerRef} style={{ position: "relative" }}>
@@ -635,8 +638,14 @@ export function Sortable<T, U extends JSX.Element>(props: SortableProps<T, U>) {
                   : props.autoscroll,
             );
 
-            itemElem.style.visibility = "hidden";
-            itemElem.style.position = "absolute";
+            createEffect(() => {
+              if (props.layout != null) {
+                itemElem.style.visibility = "hidden";
+                itemElem.style.position = "absolute";
+              } else {
+                itemElem.style.position = "";
+              }
+            });
 
             function setDefaultCursor() {
               if (props.onClick) {
@@ -673,11 +682,17 @@ export function Sortable<T, U extends JSX.Element>(props: SortableProps<T, U>) {
 
             // reactivley calc position and apply animation effect
             let anim: Animation | undefined;
-            const pos = createMemo(() => layout().pos(idx()));
+            const position = createMemo(() => layout()?.pos(idx()));
             let shouldInitPosition = true;
             createEffect(() => {
-              if (!isMouseDown() && !isNaN(pos().x) && !isNaN(pos().y)) {
-                const transform = `translate(${pos().x}px, ${pos().y}px)`;
+              const pos = position();
+              if (
+                !isMouseDown() &&
+                pos != null &&
+                !isNaN(pos.x) &&
+                !isNaN(pos.y)
+              ) {
+                const transform = `translate(${pos.x}px, ${pos.y}px)`;
                 if (shouldInitPosition) {
                   // don't use animation when setting initial position
                   itemElem.style.transform = transform;
