@@ -16,6 +16,7 @@ import {
   useContext,
 } from "solid-js";
 
+import { AnimationController, createAnimationController } from "./animation";
 import {
   Position,
   Rect,
@@ -506,6 +507,7 @@ export function Sortable<T, U extends JSX.Element>(props: SortableProps<T, U>) {
     }
   });
 
+  const controllers: Set<AnimationController> = new Set();
   const itemToElem = new Map<T, HTMLElement>();
   const [sizesDepend, sizesTrigger] = createSignal(undefined, {
     equals: false,
@@ -554,10 +556,17 @@ export function Sortable<T, U extends JSX.Element>(props: SortableProps<T, U>) {
 
   const resizeObserver = new ResizeObserver(() => {
     sizesTrigger();
+    for (const controller of controllers) {
+      controller.flip();
+    }
   });
 
   return (
-    <div class="sortable" ref={containerRef} style={{ position: "relative" }}>
+    <div
+      class="sortable"
+      ref={containerRef}
+      style={{ position: "relative", display: "flex", "flex-wrap": "wrap" }}
+    >
       <For each={props.each}>
         {(item, idx) => {
           let itemRef: HTMLElement | undefined;
@@ -684,38 +693,54 @@ export function Sortable<T, U extends JSX.Element>(props: SortableProps<T, U>) {
             let anim: Animation | undefined;
             const position = createMemo(() => layout()?.pos(idx()));
             let shouldInitPosition = true;
-            createEffect(() => {
-              const pos = position();
-              if (
-                !isMouseDown() &&
-                pos != null &&
-                !isNaN(pos.x) &&
-                !isNaN(pos.y)
-              ) {
-                const transform = `translate(${pos.x}px, ${pos.y}px)`;
-                if (shouldInitPosition) {
-                  // don't use animation when setting initial position
-                  itemElem.style.transform = transform;
-                  itemElem.style.visibility = "visible";
-                  shouldInitPosition = false;
-                } else {
-                  itemElem.classList.add("sortable-animating");
-                  anim = itemElem.animate(
-                    {
-                      transform: transform,
-                    },
-                    {
-                      duration: props.animDurationMs ?? 250,
-                      easing: props.animEasing ?? "ease",
-                      fill: "forwards",
-                    },
+            // createEffect(() => {
+            //   const pos = position();
+            //   if (
+            //     !isMouseDown() &&
+            //     pos != null &&
+            //     !isNaN(pos.x) &&
+            //     !isNaN(pos.y)
+            //   ) {
+            //     const transform = `translate(${pos.x}px, ${pos.y}px)`;
+            //     if (shouldInitPosition) {
+            //       // don't use animation when setting initial position
+            //       itemElem.style.transform = transform;
+            //       itemElem.style.visibility = "visible";
+            //       shouldInitPosition = false;
+            //     } else {
+            //       itemElem.classList.add("sortable-animating");
+            //       anim = itemElem.animate(
+            //         {
+            //           transform: transform,
+            //         },
+            //         {
+            //           duration: props.animDurationMs ?? 250,
+            //           easing: props.animEasing ?? "ease",
+            //           fill: "forwards",
+            //         },
+            //       );
+            //       anim.onfinish = () => {
+            //         itemElem.classList.remove("sortable-animating");
+            //       };
+            //     }
+            //   }
+            // });
+
+            const controller = createAnimationController({
+              elem: itemElem,
+              getPosition: () => {
+                if (props.layout == null) {
+                  return clientToRelative(
+                    elemClientRect(itemElem),
+                    containerElem,
                   );
-                  anim.onfinish = () => {
-                    itemElem.classList.remove("sortable-animating");
-                  };
+                } else {
+                  return position()!;
                 }
-              }
+              },
             });
+            controllers.add(controller);
+            onCleanup(() => controllers.delete(controller));
 
             const clickProps = () => ({
               clickDurMs: props.clickDurMs,

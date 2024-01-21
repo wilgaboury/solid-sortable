@@ -12,7 +12,7 @@ import {
 
 sortableHandle;
 
-const layouts = ["flow", "horizontal", "vertical"] as const;
+const layouts = [undefined, "flow", "horizontal", "vertical"] as const;
 type Layout = (typeof layouts)[number];
 
 const aligns = ["left", "center", "right"] as const;

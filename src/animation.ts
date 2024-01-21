@@ -1,39 +1,41 @@
-import { Rect, elemPageRect } from "./geom";
+import { Position, elemPageRect } from "./geom";
 
-export function AnimationController(
-  elem: HTMLElement,
-  getPosition: () => Rect,
-  onAnimEnd: () => void,
-  options: { animDurationMs?: number; animEasing?: string },
-) {
-  let rect = elemPageRect(elem);
+export type AnimationController = ReturnType<typeof createAnimationController>;
+
+export function createAnimationController(args: {
+  elem: HTMLElement;
+  getPosition: () => Position;
+  onAnimEnd?: () => void;
+  options?: { animDurationMs?: number; animEasing?: string };
+}) {
+  let pos: Position = elemPageRect(args.elem);
   let anim: Animation | undefined;
 
   return {
     flip: () => {
       if (anim != null) {
-        rect = elemPageRect(elem);
+        pos = elemPageRect(args.elem);
         anim.cancel();
       }
 
-      const cur = getPosition();
+      const cur = args.getPosition();
 
-      elem.style.position = "absolute";
-      elem.style.transform = `translate(${rect.x}px, ${rect.y}px)`;
+      args.elem.style.position = "absolute";
+      args.elem.style.transform = `translate(${pos.x}px, ${pos.y}px)`;
 
-      anim = elem.animate(
+      anim = args.elem.animate(
         {
           transform: `translate(${cur.x}px, ${cur.y}px)`,
         },
         {
-          duration: options.animDurationMs ?? 250,
-          easing: options.animEasing ?? "ease",
+          duration: args.options?.animDurationMs ?? 250,
+          easing: args.options?.animEasing ?? "ease",
           fill: "forwards",
         },
       );
       anim.onfinish = () => {
         anim = undefined;
-        onAnimEnd();
+        args.onAnimEnd?.();
       };
     },
   };
