@@ -12,12 +12,11 @@
   "ignorePatterns": [
     "node_modules",
     "dist",
-    "dev",
     "tsup.config.ts",
     "vitest.config.ts"
   ],
   "parserOptions": {
-    "project": "./tsconfig.json",
+    "project": ["./tsconfig.json", "./dev/tsconfig.json"],
     "tsconfigRootDir": ".",
     "sourceType": "module"
   },
@@ -78,10 +77,15 @@
     "unused-imports/no-unused-imports": "error",
     "unused-imports/no-unused-vars": "off"
   },
+  "overrides": [
+    {
+      "files": ["dev/**/*.{js,ts,tsx,jsx}"]
+    }
+  ],
   "settings": {
     "import/resolver": {
       "typescript": {
-        "project": "./tsconfig.json"
+        "project": ["./tsconfig.json", "./dev/tsconfig.json"]
       }
     }
   }
