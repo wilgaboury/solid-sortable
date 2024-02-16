@@ -692,7 +692,7 @@ export function Sortable<T, U extends JSX.Element>(props: SortableProps<T, U>) {
             // reactivley calc position and apply animation effect
             let anim: Animation | undefined;
             const position = createMemo(() => layout()?.pos(idx()));
-            let shouldInitPosition = true;
+            // const shouldInitPosition = true;
             // createEffect(() => {
             //   const pos = position();
             //   if (
@@ -726,19 +726,7 @@ export function Sortable<T, U extends JSX.Element>(props: SortableProps<T, U>) {
             //   }
             // });
 
-            const controller = createAnimationController({
-              elem: itemElem,
-              getPosition: () => {
-                if (props.layout == null) {
-                  return clientToRelative(
-                    elemClientRect(itemElem),
-                    containerElem,
-                  );
-                } else {
-                  return position()!;
-                }
-              },
-            });
+            const controller = createAnimationController(itemElem);
             controllers.add(controller);
             onCleanup(() => controllers.delete(controller));
 
@@ -757,7 +745,7 @@ export function Sortable<T, U extends JSX.Element>(props: SortableProps<T, U>) {
                 clickProps,
                 autoscroll,
               );
-              shouldInitPosition = false;
+              // shouldInitPosition = false;
               itemElem.style.visibility = "visible";
             }
             const mouseDownListener = (e: MouseEvent) => {

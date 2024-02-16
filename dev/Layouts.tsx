@@ -1,4 +1,5 @@
-import { createSignal, type Component, batch, Show } from "solid-js";
+import { type Component, Show, batch, createSignal } from "solid-js";
+
 import styles from "./App.module.css";
 import {
   Sortable,
@@ -29,7 +30,7 @@ function getLayout(layout: Layout, align: Align) {
   }
 }
 
-const App: Component = () => {
+export const Layouts: Component = () => {
   const [data, setData] = createSignal<ReadonlyArray<number>>([]);
   const [count, setCount] = createSignal(0);
   const [layoutIdx, setLayoutIdx] = createSignal(0);
@@ -70,7 +71,7 @@ const App: Component = () => {
       </div>
       <Sortable
         each={data()}
-        layout={getLayout(layouts[layoutIdx()]!, aligns[alignIdx()]!)}
+        layout={getLayout(layouts[layoutIdx()], aligns[alignIdx()]!)}
         onMove={(_item, from, to) => {
           setData((cur) => move(cur, from, to));
         }}
@@ -95,5 +96,3 @@ const App: Component = () => {
     </div>
   );
 };
-
-export default App;
